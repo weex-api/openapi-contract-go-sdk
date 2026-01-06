@@ -3,7 +3,7 @@ package websocket
 import (
 	"encoding/json"
 
-	"github.com/weex/openapi-contract-go-sdk/weex/types"
+	"github.com/weex-api/openapi-contract-go-sdk/weex/types"
 )
 
 // MessageType represents the type of WebSocket message

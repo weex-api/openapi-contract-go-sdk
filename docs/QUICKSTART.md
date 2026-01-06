@@ -16,7 +16,7 @@
 ## 安装
 
 ```bash
-go get github.com/weex/openapi-contract-go-sdk
+go get github.com/weex-api/openapi-contract-go-sdk
 ```
 
 **要求**: Go 1.20 或更高版本
@@ -45,7 +45,7 @@ import (
     "fmt"
     "log"
 
-    "github.com/weex/openapi-contract-go-sdk/weex"
+    "github.com/weex-api/openapi-contract-go-sdk/weex"
 )
 
 func main() {
@@ -71,7 +71,7 @@ import (
     "log"
     "os"
 
-    "github.com/weex/openapi-contract-go-sdk/weex"
+    "github.com/weex-api/openapi-contract-go-sdk/weex"
 )
 
 func main() {

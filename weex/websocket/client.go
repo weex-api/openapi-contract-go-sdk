@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/gorilla/websocket"
-	"github.com/weex/openapi-contract-go-sdk/weex"
+	"github.com/weex-api/openapi-contract-go-sdk/weex"
 )
 
 const (

@@ -17,9 +17,9 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/weex/openapi-contract-go-sdk/weex"
-	"github.com/weex/openapi-contract-go-sdk/weex/websocket"
-	"github.com/weex/openapi-contract-go-sdk/weex/websocket/private"
+	"github.com/weex-api/openapi-contract-go-sdk/weex"
+	"github.com/weex-api/openapi-contract-go-sdk/weex/websocket"
+	"github.com/weex-api/openapi-contract-go-sdk/weex/websocket/private"
 )
 
 func main() {

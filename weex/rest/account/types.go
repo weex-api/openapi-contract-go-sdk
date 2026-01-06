@@ -1,7 +1,7 @@
 package account
 
 import (
-	"github.com/weex/openapi-contract-go-sdk/weex/types"
+	"github.com/weex-api/openapi-contract-go-sdk/weex/types"
 )
 
 // AccountInfo represents account information

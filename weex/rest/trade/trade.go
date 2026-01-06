@@ -7,7 +7,7 @@ import (
 	"net/url"
 	"strconv"
 
-	"github.com/weex/openapi-contract-go-sdk/weex/rest"
+	"github.com/weex-api/openapi-contract-go-sdk/weex/rest"
 )
 
 // Service provides access to trading API endpoints

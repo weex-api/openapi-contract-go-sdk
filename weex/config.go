@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/weex/openapi-contract-go-sdk/weex/types"
+	"github.com/weex-api/openapi-contract-go-sdk/weex/types"
 )
 
 // Config holds the configuration for the WEEX Contract API client

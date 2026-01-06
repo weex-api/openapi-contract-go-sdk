@@ -13,9 +13,9 @@ import (
 	"log"
 	"time"
 
-	"github.com/weex/openapi-contract-go-sdk/weex"
-	"github.com/weex/openapi-contract-go-sdk/weex/rest/market"
-	"github.com/weex/openapi-contract-go-sdk/weex/types"
+	"github.com/weex-api/openapi-contract-go-sdk/weex"
+	"github.com/weex-api/openapi-contract-go-sdk/weex/rest/market"
+	"github.com/weex-api/openapi-contract-go-sdk/weex/types"
 )
 
 func main() {

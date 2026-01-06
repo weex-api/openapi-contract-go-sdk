@@ -10,7 +10,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/weex/openapi-contract-go-sdk/weex/types"
+	"github.com/weex-api/openapi-contract-go-sdk/weex/types"
 )
 
 // Logger interface for logging (to avoid importing weex package)

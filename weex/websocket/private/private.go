@@ -6,8 +6,8 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/weex/openapi-contract-go-sdk/weex"
-	"github.com/weex/openapi-contract-go-sdk/weex/websocket"
+	"github.com/weex-api/openapi-contract-go-sdk/weex"
+	"github.com/weex-api/openapi-contract-go-sdk/weex/websocket"
 )
 
 // AccountCallback is called when account balance data is received

@@ -1,7 +1,7 @@
 package market
 
 import (
-	"github.com/weex/openapi-contract-go-sdk/weex/types"
+	"github.com/weex-api/openapi-contract-go-sdk/weex/types"
 )
 
 // ContractInfo represents contract information

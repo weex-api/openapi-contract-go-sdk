@@ -6,8 +6,8 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/weex/openapi-contract-go-sdk/weex"
-	"github.com/weex/openapi-contract-go-sdk/weex/websocket"
+	"github.com/weex-api/openapi-contract-go-sdk/weex"
+	"github.com/weex-api/openapi-contract-go-sdk/weex/websocket"
 )
 
 // TickerCallback is called when ticker data is received

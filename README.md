@@ -34,7 +34,7 @@
 ## 安装
 
 ```bash
-go get github.com/weex/openapi-contract-go-sdk
+go get github.com/weex-api/openapi-contract-go-sdk
 ```
 
 **要求**: Go 1.20 或更高版本
@@ -44,7 +44,7 @@ go get github.com/weex/openapi-contract-go-sdk
 ### 安装依赖
 
 ```bash
-go get github.com/weex/openapi-contract-go-sdk
+go get github.com/weex-api/openapi-contract-go-sdk
 ```
 
 ### 示例 1：获取市场数据（公开端点，无需API密钥）
@@ -57,7 +57,7 @@ import (
     "fmt"
     "log"
 
-    "github.com/weex/openapi-contract-go-sdk/weex"
+    "github.com/weex-api/openapi-contract-go-sdk/weex"
 )
 
 func main() {
@@ -93,7 +93,7 @@ import (
     "fmt"
     "log"
 
-    "github.com/weex/openapi-contract-go-sdk/weex"
+    "github.com/weex-api/openapi-contract-go-sdk/weex"
 )
 
 func main() {
@@ -127,9 +127,9 @@ import (
     "fmt"
     "log"
 
-    "github.com/weex/openapi-contract-go-sdk/weex"
-    "github.com/weex/openapi-contract-go-sdk/weex/websocket"
-    "github.com/weex/openapi-contract-go-sdk/weex/websocket/public"
+    "github.com/weex-api/openapi-contract-go-sdk/weex"
+    "github.com/weex-api/openapi-contract-go-sdk/weex/websocket"
+    "github.com/weex-api/openapi-contract-go-sdk/weex/websocket/public"
 )
 
 func main() {
@@ -177,9 +177,9 @@ import (
     "log"
     "os"
 
-    "github.com/weex/openapi-contract-go-sdk/weex"
-    "github.com/weex/openapi-contract-go-sdk/weex/websocket"
-    "github.com/weex/openapi-contract-go-sdk/weex/websocket/private"
+    "github.com/weex-api/openapi-contract-go-sdk/weex"
+    "github.com/weex-api/openapi-contract-go-sdk/weex/websocket"
+    "github.com/weex-api/openapi-contract-go-sdk/weex/websocket/private"
 )
 
 func main() {
@@ -442,7 +442,7 @@ sdk/golang/
 
 ## 支持
 
-- 问题反馈: [GitHub Issues](https://github.com/weex/openapi-contract-go-sdk/issues)
+- 问题反馈: [GitHub Issues](https://github.com/weex-api/openapi-contract-go-sdk/issues)
 - API 文档: [WEEX API Documentation](https://www.weex.com/api-doc/)
 - 官方网站: [https://www.weex.com](https://www.weex.com)
 

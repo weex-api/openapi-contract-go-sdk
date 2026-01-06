@@ -5,10 +5,10 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/weex/openapi-contract-go-sdk/weex/rest"
-	"github.com/weex/openapi-contract-go-sdk/weex/rest/account"
-	"github.com/weex/openapi-contract-go-sdk/weex/rest/market"
-	"github.com/weex/openapi-contract-go-sdk/weex/rest/trade"
+	"github.com/weex-api/openapi-contract-go-sdk/weex/rest"
+	"github.com/weex-api/openapi-contract-go-sdk/weex/rest/account"
+	"github.com/weex-api/openapi-contract-go-sdk/weex/rest/market"
+	"github.com/weex-api/openapi-contract-go-sdk/weex/rest/trade"
 )
 
 // Client is the main SDK client for WEEX Contract API

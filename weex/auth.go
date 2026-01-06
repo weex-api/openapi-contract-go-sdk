@@ -8,7 +8,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/weex/openapi-contract-go-sdk/weex/types"
+	"github.com/weex-api/openapi-contract-go-sdk/weex/types"
 )
 
 // Authenticator handles API authentication and signature generation
