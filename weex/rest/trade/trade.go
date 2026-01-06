@@ -21,381 +21,254 @@ func NewService(client *rest.Client) *Service {
 }
 
 // PlaceOrder places a new order
-// POST /trade/order
-// Weight(IP): 10, Weight(UID): 5
-//
-// Reference: /contract/Transaction_API/PlaceOrder.md
+// POST /capi/v2/order/placeOrder
+// Weight(IP): 2, Weight(UID): 5
 func (s *Service) PlaceOrder(ctx context.Context, req *PlaceOrderRequest) (*PlaceOrderResponse, error) {
-	path := "/trade/order"
-
+	path := "/order/placeOrder"
 	var response PlaceOrderResponse
-	err := s.client.Post(ctx, path, req, &response, 10, 5)
+	err := s.client.Post(ctx, path, req, &response, 2, 5)
 	return &response, err
 }
 
-// PlaceOrdersBatch places multiple orders in a batch
-// POST /trade/orders/batch
-// Weight(IP): 20, Weight(UID): 10
-//
-// Reference: /contract/Transaction_API/PlaceOrdersBatch.md
-func (s *Service) PlaceOrdersBatch(ctx context.Context, req *PlaceOrdersBatchRequest) (*PlaceOrdersBatchResponse, error) {
-	path := "/trade/orders/batch"
-
-	// Validate: max 10 orders
-	if len(req.Orders) > 10 {
-		return nil, fmt.Errorf("maximum 10 orders allowed in batch, got %d", len(req.Orders))
+// PlaceBatchOrders places multiple orders in a batch
+// POST /capi/v2/order/batchOrders
+// Weight(IP): 5, Weight(UID): 10
+func (s *Service) PlaceBatchOrders(ctx context.Context, req *PlaceBatchOrdersRequest) (*PlaceBatchOrdersResponse, error) {
+	path := "/order/batchOrders"
+	if len(req.OrderDataList) > 20 {
+		return nil, fmt.Errorf("maximum 20 orders allowed in batch, got %d", len(req.OrderDataList))
 	}
-
-	var response PlaceOrdersBatchResponse
-	err := s.client.Post(ctx, path, req, &response, 20, 10)
-	return &response, err
-}
-
-// PlacePendingOrder places a pending/trigger order
-// POST /trade/order/pending
-// Weight(IP): 10, Weight(UID): 5
-//
-// Reference: /contract/Transaction_API/PlacePendingOrder.md
-func (s *Service) PlacePendingOrder(ctx context.Context, req *PlacePendingOrderRequest) (*PlaceOrderResponse, error) {
-	path := "/trade/order/pending"
-
-	var response PlaceOrderResponse
-	err := s.client.Post(ctx, path, req, &response, 10, 5)
-	return &response, err
-}
-
-// PlaceTpSlOrder places a take profit/stop loss order
-// POST /trade/order/tpsl
-// Weight(IP): 10, Weight(UID): 5
-//
-// Reference: /contract/Transaction_API/PlaceTpSlOrder.md
-func (s *Service) PlaceTpSlOrder(ctx context.Context, req *PlaceTpSlOrderRequest) (*PlaceOrderResponse, error) {
-	path := "/trade/order/tpsl"
-
-	var response PlaceOrderResponse
-	err := s.client.Post(ctx, path, req, &response, 10, 5)
+	var response PlaceBatchOrdersResponse
+	err := s.client.Post(ctx, path, req, &response, 5, 10)
 	return &response, err
 }
 
 // CancelOrder cancels an order
-// POST /trade/order/cancel
-// Weight(IP): 10, Weight(UID): 5
-//
-// Reference: /contract/Transaction_API/CancelOrder.md
+// POST /capi/v2/order/cancel_order
+// Weight(IP): 2, Weight(UID): 3
 func (s *Service) CancelOrder(ctx context.Context, req *CancelOrderRequest) (*CancelOrderResponse, error) {
-	path := "/trade/order/cancel"
-
-	// Validate: either orderId or clientOid required
+	path := "/order/cancel_order"
 	if req.OrderId == "" && req.ClientOid == "" {
 		return nil, fmt.Errorf("either orderId or clientOid is required")
 	}
-
 	var response CancelOrderResponse
-	err := s.client.Post(ctx, path, req, &response, 10, 5)
+	err := s.client.Post(ctx, path, req, &response, 2, 3)
 	return &response, err
 }
 
-// CancelOrdersBatch cancels multiple orders in a batch
-// POST /trade/orders/cancel/batch
-// Weight(IP): 20, Weight(UID): 10
-//
-// Reference: /contract/Transaction_API/CancelOrdersBatch.md
-func (s *Service) CancelOrdersBatch(ctx context.Context, req *CancelOrdersBatchRequest) (*PlaceOrdersBatchResponse, error) {
-	path := "/trade/orders/cancel/batch"
-
-	// Validate: max 10 orders
-	if len(req.Orders) > 10 {
-		return nil, fmt.Errorf("maximum 10 orders allowed in batch, got %d", len(req.Orders))
+// CancelBatchOrders cancels multiple orders in a batch
+// POST /capi/v2/order/cancel_batch_orders
+// Weight(IP): 5, Weight(UID): 10
+func (s *Service) CancelBatchOrders(ctx context.Context, req *CancelBatchOrdersRequest) (*CancelBatchOrdersResponse, error) {
+	path := "/order/cancel_batch_orders"
+	if len(req.Ids) == 0 && len(req.Cids) == 0 {
+		return nil, fmt.Errorf("either ids or cids is required")
 	}
-
-	var response PlaceOrdersBatchResponse
-	err := s.client.Post(ctx, path, req, &response, 20, 10)
+	var response CancelBatchOrdersResponse
+	err := s.client.Post(ctx, path, req, &response, 5, 10)
 	return &response, err
 }
 
-// CancelAllOrders cancels all orders for a symbol
-// POST /trade/orders/cancel/all
-// Weight(IP): 20, Weight(UID): 10
-//
-// Reference: /contract/Transaction_API/CancelAllOrders.md
-func (s *Service) CancelAllOrders(ctx context.Context, req *CancelAllOrdersRequest) (*CancelAllOrdersResponse, error) {
-	path := "/trade/orders/cancel/all"
+// CancelAllOrders cancels all orders
+// POST /capi/v2/order/cancelAllOrders
+// Weight(IP): 40, Weight(UID): 50
+func (s *Service) CancelAllOrders(ctx context.Context, req *CancelAllOrdersRequest) ([]CancelAllOrdersResultItem, error) {
+	path := "/order/cancelAllOrders"
+	var response []CancelAllOrdersResultItem
+	err := s.client.Post(ctx, path, req, &response, 40, 50)
+	return response, err
+}
 
-	var response CancelAllOrdersResponse
-	err := s.client.Post(ctx, path, req, &response, 20, 10)
+// PlacePendingOrder places a pending/trigger order
+// POST /capi/v2/order/plan_order
+// Weight(IP): 2, Weight(UID): 5
+func (s *Service) PlacePendingOrder(ctx context.Context, req *PlacePendingOrderRequest) (*PlaceOrderResponse, error) {
+	path := "/order/plan_order"
+	var response PlaceOrderResponse
+	err := s.client.Post(ctx, path, req, &response, 2, 5)
 	return &response, err
 }
 
 // CancelPendingOrder cancels a pending/trigger order
-// POST /trade/order/pending/cancel
-// Weight(IP): 10, Weight(UID): 5
-//
-// Reference: /contract/Transaction_API/CancelPendingOrder.md
-func (s *Service) CancelPendingOrder(ctx context.Context, req *CancelOrderRequest) (*CancelOrderResponse, error) {
-	path := "/trade/order/pending/cancel"
-
+// POST /capi/v2/order/cancel_plan
+// Weight(IP): 2, Weight(UID): 3
+func (s *Service) CancelPendingOrder(ctx context.Context, req *CancelPendingOrderRequest) (*CancelOrderResponse, error) {
+	path := "/order/cancel_plan"
 	var response CancelOrderResponse
-	err := s.client.Post(ctx, path, req, &response, 10, 5)
-	return &response, err
-}
-
-// ModifyTpSlOrder modifies a take profit/stop loss order
-// PUT /trade/order/tpsl
-// Weight(IP): 10, Weight(UID): 5
-//
-// Reference: /contract/Transaction_API/ModifyTpSlOrder.md
-func (s *Service) ModifyTpSlOrder(ctx context.Context, req *PlaceTpSlOrderRequest) (*PlaceOrderResponse, error) {
-	path := "/trade/order/tpsl"
-
-	var response PlaceOrderResponse
-	err := s.client.Put(ctx, path, req, &response, 10, 5)
-	return &response, err
-}
-
-// ClosePositions closes positions
-// POST /trade/position/close
-// Weight(IP): 10, Weight(UID): 5
-//
-// Reference: /contract/Transaction_API/ClosePositions.md
-func (s *Service) ClosePositions(ctx context.Context, req *ClosePositionsRequest) (*ClosePositionsResponse, error) {
-	path := "/trade/position/close"
-
-	var response ClosePositionsResponse
-	err := s.client.Post(ctx, path, req, &response, 10, 5)
-	return &response, err
-}
-
-// GetCurrentOrderStatus gets current order status (open orders)
-// GET /trade/orders/current
-// Weight(IP): 20, Weight(UID): 10
-//
-// Reference: /contract/Transaction_API/GetCurrentOrderStatus.md
-func (s *Service) GetCurrentOrderStatus(ctx context.Context, req *GetOrdersRequest) (*OrdersResponse, error) {
-	params := url.Values{}
-
-	if req != nil {
-		if req.Symbol != "" {
-			params.Set("symbol", req.Symbol)
-		}
-		if req.OrderId != "" {
-			params.Set("orderId", req.OrderId)
-		}
-		if req.ClientOid != "" {
-			params.Set("clientOid", req.ClientOid)
-		}
-		if req.Type > 0 {
-			params.Set("type", strconv.Itoa(req.Type))
-		}
-		if req.State >= 0 {
-			params.Set("state", strconv.Itoa(req.State))
-		}
-		if req.Limit > 0 {
-			params.Set("limit", strconv.Itoa(req.Limit))
-		}
-	}
-
-	path := "/trade/orders/current"
-	if len(params) > 0 {
-		path = path + "?" + params.Encode()
-	}
-
-	var response OrdersResponse
-	err := s.client.Get(ctx, path, &response, 20, 10)
-	return &response, err
-}
-
-// GetSingleOrderInfo gets single order information
-// GET /trade/order
-// Weight(IP): 5, Weight(UID): 2
-//
-// Reference: /contract/Transaction_API/GetSingleOrderInfo.md
-func (s *Service) GetSingleOrderInfo(ctx context.Context, orderId, clientOid, symbol string) (*Order, error) {
-	params := url.Values{}
-	params.Set("symbol", symbol)
-
-	if orderId != "" {
-		params.Set("orderId", orderId)
-	} else if clientOid != "" {
-		params.Set("clientOid", clientOid)
-	} else {
-		return nil, fmt.Errorf("either orderId or clientOid is required")
-	}
-
-	path := "/trade/order?" + params.Encode()
-
-	var order Order
-	err := s.client.Get(ctx, path, &order, 5, 2)
-	return &order, err
-}
-
-// GetOrderHistory gets order history (completed orders)
-// GET /trade/orders/history
-// Weight(IP): 20, Weight(UID): 10
-//
-// Reference: /contract/Transaction_API/GetOrderHistory.md
-func (s *Service) GetOrderHistory(ctx context.Context, req *GetOrdersRequest) (*OrdersResponse, error) {
-	params := url.Values{}
-
-	if req != nil {
-		if req.Symbol != "" {
-			params.Set("symbol", req.Symbol)
-		}
-		if req.Type > 0 {
-			params.Set("type", strconv.Itoa(req.Type))
-		}
-		if req.State >= 0 {
-			params.Set("state", strconv.Itoa(req.State))
-		}
-		if req.StartTime > 0 {
-			params.Set("startTime", strconv.FormatInt(req.StartTime, 10))
-		}
-		if req.EndTime > 0 {
-			params.Set("endTime", strconv.FormatInt(req.EndTime, 10))
-		}
-		if req.Limit > 0 {
-			params.Set("limit", strconv.Itoa(req.Limit))
-		}
-	}
-
-	path := "/trade/orders/history"
-	if len(params) > 0 {
-		path = path + "?" + params.Encode()
-	}
-
-	var response OrdersResponse
-	err := s.client.Get(ctx, path, &response, 20, 10)
+	err := s.client.Post(ctx, path, req, &response, 2, 3)
 	return &response, err
 }
 
 // GetCurrentPendingOrders gets current pending/trigger orders
-// GET /trade/orders/pending/current
-// Weight(IP): 20, Weight(UID): 10
-//
-// Reference: /contract/Transaction_API/GetCurrentPendingOrders.md
-func (s *Service) GetCurrentPendingOrders(ctx context.Context, req *GetPendingOrdersRequest) (*PendingOrdersResponse, error) {
+// GET /capi/v2/order/currentPlan
+// Weight(IP): 3, Weight(UID): 3
+func (s *Service) GetCurrentPendingOrders(ctx context.Context, symbol string, orderId int64, startTime, endTime int64, limit, page int) ([]PlanOrder, error) {
 	params := url.Values{}
-
-	if req != nil {
-		if req.Symbol != "" {
-			params.Set("symbol", req.Symbol)
-		}
-		if req.Limit > 0 {
-			params.Set("limit", strconv.Itoa(req.Limit))
-		}
+	if symbol != "" {
+		params.Set("symbol", symbol)
+	}
+	if orderId > 0 {
+		params.Set("orderId", strconv.FormatInt(orderId, 10))
+	}
+	if startTime > 0 {
+		params.Set("startTime", strconv.FormatInt(startTime, 10))
+	}
+	if endTime > 0 {
+		params.Set("endTime", strconv.FormatInt(endTime, 10))
+	}
+	if limit > 0 {
+		params.Set("limit", strconv.Itoa(limit))
+	}
+	if page > 0 {
+		params.Set("page", strconv.Itoa(page))
 	}
 
-	path := "/trade/orders/pending/current"
+	path := "/order/currentPlan"
 	if len(params) > 0 {
 		path = path + "?" + params.Encode()
 	}
 
-	var response PendingOrdersResponse
-	err := s.client.Get(ctx, path, &response, 20, 10)
+	var orders []PlanOrder
+	err := s.client.Get(ctx, path, &orders, 3, 3)
+	return orders, err
+}
+
+// PlaceTpSlOrder places a take profit/stop loss order
+// POST /capi/v2/order/placeTpSlOrder
+// Weight(IP): 2, Weight(UID): 5
+func (s *Service) PlaceTpSlOrder(ctx context.Context, req *PlaceTpSlOrderRequest) ([]PlaceTpSlOrderResultItem, error) {
+	path := "/order/placeTpSlOrder"
+	var response []PlaceTpSlOrderResultItem
+	err := s.client.Post(ctx, path, req, &response, 2, 5)
+	return response, err
+}
+
+// ModifyTpSlOrder modifies a take profit/stop loss order
+// POST /capi/v2/order/modifyTpSlOrder
+// Weight(IP): 2, Weight(UID): 5
+func (s *Service) ModifyTpSlOrder(ctx context.Context, req *ModifyTpSlOrderRequest) (*ModifyTpSlOrderResponse, error) {
+	path := "/order/modifyTpSlOrder"
+	var response ModifyTpSlOrderResponse
+	err := s.client.Post(ctx, path, req, &response, 2, 5)
 	return &response, err
 }
 
-// GetHistoricalPendingOrders gets historical pending/trigger orders
-// GET /trade/orders/pending/history
-// Weight(IP): 20, Weight(UID): 10
-//
-// Reference: /contract/Transaction_API/GetHistoricalPendingOrders.md
-func (s *Service) GetHistoricalPendingOrders(ctx context.Context, req *GetPendingOrdersRequest) (*PendingOrdersResponse, error) {
-	params := url.Values{}
+// ClosePositions closes all positions
+// POST /capi/v2/order/closePositions
+// Weight(IP): 40, Weight(UID): 50
+func (s *Service) ClosePositions(ctx context.Context, req *ClosePositionsRequest) ([]ClosePositionsResultItem, error) {
+	path := "/order/closePositions"
+	var response []ClosePositionsResultItem
+	err := s.client.Post(ctx, path, req, &response, 40, 50)
+	return response, err
+}
 
-	if req != nil {
-		if req.Symbol != "" {
-			params.Set("symbol", req.Symbol)
-		}
-		if req.StartTime > 0 {
-			params.Set("startTime", strconv.FormatInt(req.StartTime, 10))
-		}
-		if req.EndTime > 0 {
-			params.Set("endTime", strconv.FormatInt(req.EndTime, 10))
-		}
-		if req.Limit > 0 {
-			params.Set("limit", strconv.Itoa(req.Limit))
-		}
+// GetSingleOrderInfo gets single order information
+// GET /capi/v2/order/detail
+// Weight(IP): 2, Weight(UID): 2
+func (s *Service) GetSingleOrderInfo(ctx context.Context, orderId string) (*Order, error) {
+	params := url.Values{}
+	params.Set("orderId", orderId)
+	path := "/order/detail?" + params.Encode()
+
+	var order Order
+	err := s.client.Get(ctx, path, &order, 2, 2)
+	return &order, err
+}
+
+// GetOrderHistory gets order history (completed orders)
+// GET /capi/v2/order/history
+// Weight(IP): 10, Weight(UID): 10
+func (s *Service) GetOrderHistory(ctx context.Context, symbol string, pageSize int, createDate, endCreateDate int64) ([]Order, error) {
+	params := url.Values{}
+	if symbol != "" {
+		params.Set("symbol", symbol)
+	}
+	if pageSize > 0 {
+		params.Set("pageSize", strconv.Itoa(pageSize))
+	}
+	if createDate > 0 {
+		params.Set("createDate", strconv.FormatInt(createDate, 10))
+	}
+	if endCreateDate > 0 {
+		params.Set("endCreateDate", strconv.FormatInt(endCreateDate, 10))
 	}
 
-	path := "/trade/orders/pending/history"
+	path := "/order/history"
 	if len(params) > 0 {
 		path = path + "?" + params.Encode()
 	}
 
-	var response PendingOrdersResponse
-	err := s.client.Get(ctx, path, &response, 20, 10)
-	return &response, err
+	var orders []Order
+	err := s.client.Get(ctx, path, &orders, 10, 10)
+	return orders, err
+}
+
+// GetCurrentOrderStatus gets current order status (open orders)
+// GET /capi/v2/order/current
+// Weight(IP): 2, Weight(UID): 2
+func (s *Service) GetCurrentOrderStatus(ctx context.Context, symbol string, orderId int64, startTime, endTime int64, limit, page int) ([]Order, error) {
+	params := url.Values{}
+	if symbol != "" {
+		params.Set("symbol", symbol)
+	}
+	if orderId > 0 {
+		params.Set("orderId", strconv.FormatInt(orderId, 10))
+	}
+	if startTime > 0 {
+		params.Set("startTime", strconv.FormatInt(startTime, 10))
+	}
+	if endTime > 0 {
+		params.Set("endTime", strconv.FormatInt(endTime, 10))
+	}
+	if limit > 0 {
+		params.Set("limit", strconv.Itoa(limit))
+	}
+	if page > 0 {
+		params.Set("page", strconv.Itoa(page))
+	}
+
+	path := "/order/current"
+	if len(params) > 0 {
+		path = path + "?" + params.Encode()
+	}
+
+	var orders []Order
+	err := s.client.Get(ctx, path, &orders, 2, 2)
+	return orders, err
 }
 
 // GetTradeDetails gets trade fill details
-// GET /trade/fills
-// Weight(IP): 20, Weight(UID): 10
-//
-// Reference: /contract/Transaction_API/GetTradeDetails.md
-func (s *Service) GetTradeDetails(ctx context.Context, req *GetFillsRequest) (*FillsResponse, error) {
+// GET /capi/v2/order/fills
+// Weight(IP): 5, Weight(UID): 5
+func (s *Service) GetTradeDetails(ctx context.Context, symbol string, orderId int64, startTime, endTime int64, limit int) (*FillsResponse, error) {
 	params := url.Values{}
-
-	if req != nil {
-		if req.Symbol != "" {
-			params.Set("symbol", req.Symbol)
-		}
-		if req.OrderId != "" {
-			params.Set("orderId", req.OrderId)
-		}
-		if req.StartTime > 0 {
-			params.Set("startTime", strconv.FormatInt(req.StartTime, 10))
-		}
-		if req.EndTime > 0 {
-			params.Set("endTime", strconv.FormatInt(req.EndTime, 10))
-		}
-		if req.Limit > 0 {
-			params.Set("limit", strconv.Itoa(req.Limit))
-		}
+	if symbol != "" {
+		params.Set("symbol", symbol)
+	}
+	if orderId > 0 {
+		params.Set("orderId", strconv.FormatInt(orderId, 10))
+	}
+	if startTime > 0 {
+		params.Set("startTime", strconv.FormatInt(startTime, 10))
+	}
+	if endTime > 0 {
+		params.Set("endTime", strconv.FormatInt(endTime, 10))
+	}
+	if limit > 0 {
+		params.Set("limit", strconv.Itoa(limit))
 	}
 
-	path := "/trade/fills"
+	path := "/order/fills"
 	if len(params) > 0 {
 		path = path + "?" + params.Encode()
 	}
 
 	var response FillsResponse
-	err := s.client.Get(ctx, path, &response, 20, 10)
-	return &response, err
-}
-
-// Validation helpers
-
-// ValidateClientOid validates client order ID
-func ValidateClientOid(clientOid string) error {
-	if clientOid == "" {
-		return fmt.Errorf("clientOid cannot be empty")
+	err := s.client.Get(ctx, path, &response, 5, 5)
+	if err != nil {
+		// Empty response case
+		return &FillsResponse{List: []Fill{}, NextFlag: false, Totals: 0}, nil
 	}
-	if len(clientOid) > 64 {
-		return fmt.Errorf("clientOid cannot exceed 64 characters")
-	}
-	return nil
-}
-
-// ValidateOrderType validates order type
-func ValidateOrderType(orderType int) error {
-	if orderType < 1 || orderType > 4 {
-		return fmt.Errorf("invalid order type: %d (must be 1-4)", orderType)
-	}
-	return nil
-}
-
-// ValidateOrderExecutionType validates order execution type
-func ValidateOrderExecutionType(execType int) error {
-	if execType < 0 || execType > 3 {
-		return fmt.Errorf("invalid order execution type: %d (must be 0-3)", execType)
-	}
-	return nil
-}
-
-// ValidatePriceMatch validates price match type
-func ValidatePriceMatch(match int) error {
-	if match != 0 && match != 1 {
-		return fmt.Errorf("invalid price match: %d (must be 0 or 1)", match)
-	}
-	return nil
+	return &response, nil
 }

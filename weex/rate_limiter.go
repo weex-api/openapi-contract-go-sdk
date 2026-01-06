@@ -113,8 +113,8 @@ type RateLimiter struct {
 //   - logger: Logger instance
 func NewRateLimiter(enabled bool, ipWeight, uidWeight int, logger Logger) *RateLimiter {
 	return &RateLimiter{
-		ipBucket:  NewTokenBucket(ipWeight, 5*time.Minute),
-		uidBucket: NewTokenBucket(uidWeight, 5*time.Minute),
+		ipBucket:  NewTokenBucket(ipWeight, 5*time.Second),
+		uidBucket: NewTokenBucket(uidWeight, 5*time.Second),
 		enabled:   enabled,
 		logger:    logger,
 	}

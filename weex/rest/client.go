@@ -130,30 +130,41 @@ func (c *Client) doRequestOnce(ctx context.Context, method, path string, body in
 
 // parseResponse parses the API response and handles errors
 func (c *Client) parseResponse(statusCode int, body []byte, result interface{}) error {
-	// Parse API response wrapper
+	// Try parsing as API response wrapper first
 	var apiResp APIResponse
-	if err := json.Unmarshal(body, &apiResp); err != nil {
-		return fmt.Errorf("failed to unmarshal response: %w", err)
+	if err := json.Unmarshal(body, &apiResp); err == nil {
+		// Successfully parsed as APIResponse, check if it has the wrapper structure
+		if apiResp.Code != "" || apiResp.Msg != "" || apiResp.RequestTime != 0 {
+			// This is a wrapped response
+			// Check for API errors
+			// Success codes: "0" or "200" (some endpoints return "200" for success)
+			// HTTP 2xx status codes also indicate success
+			isSuccess := apiResp.Code == "0" || apiResp.Code == "200" || (statusCode >= 200 && statusCode < 300)
+			if apiResp.Code != "" && !isSuccess {
+				return fmt.Errorf("API error [%s]: %s (status: %d, time: %d)", apiResp.Code, apiResp.Msg, statusCode, apiResp.RequestTime)
+			}
+
+			// Parse data if result is provided
+			if result != nil && len(apiResp.Data) > 0 {
+				if err := json.Unmarshal(apiResp.Data, result); err != nil {
+					return fmt.Errorf("failed to unmarshal response data: %w", err)
+				}
+			}
+			return nil
+		}
 	}
 
-	// Check for API errors
-	if apiResp.Code != "" && apiResp.Code != "0" {
-		return fmt.Errorf("API error [%s]: %s (status: %d, time: %d)", apiResp.Code, apiResp.Msg, statusCode, apiResp.RequestTime)
+	// Not a wrapped response or failed to parse as wrapper
+	// Try parsing directly into result
+	if result != nil {
+		if err := json.Unmarshal(body, result); err != nil {
+			return fmt.Errorf("failed to unmarshal direct response: %w", err)
+		}
 	}
 
-	// Check HTTP status code
+	// Check HTTP status code for errors
 	if statusCode >= 400 {
-		// If we don't have an error code from API, create a generic error
-		if apiResp.Code == "" {
-			return fmt.Errorf("HTTP error: %d (time: %d)", statusCode, apiResp.RequestTime)
-		}
-	}
-
-	// Parse data if result is provided
-	if result != nil && len(apiResp.Data) > 0 {
-		if err := json.Unmarshal(apiResp.Data, result); err != nil {
-			return fmt.Errorf("failed to unmarshal response data: %w", err)
-		}
+		return fmt.Errorf("HTTP error: %d", statusCode)
 	}
 
 	return nil
@@ -166,6 +177,11 @@ func (c *Client) Get(ctx context.Context, path string, result interface{}, ipWei
 
 // Post performs a POST request
 func (c *Client) Post(ctx context.Context, path string, body interface{}, result interface{}, ipWeight, uidWeight int) error {
+	return c.DoRequest(ctx, http.MethodPost, path, body, result, ipWeight, uidWeight)
+}
+
+// PostRaw performs a POST request and expects a raw API response (code, msg, requestTime)
+func (c *Client) PostRaw(ctx context.Context, path string, body interface{}, result interface{}, ipWeight, uidWeight int) error {
 	return c.DoRequest(ctx, http.MethodPost, path, body, result, ipWeight, uidWeight)
 }
 

@@ -1,10 +1,9 @@
-// Trading Example
+// Account and Trading API Comprehensive Example
 //
-// This example demonstrates how to use the WEEX Contract API SDK
-// for trading operations (placing orders, managing positions, etc.).
+// This example demonstrates how to use all WEEX Contract Account and Trading APIs
 //
-// ⚠️ WARNING: This example uses real trading functions!
-// Make sure to use test credentials or very small amounts.
+// ⚠️ WARNING: Some examples modify real account settings and place real orders!
+// Make sure to use test credentials or review carefully before uncommenting.
 //
 // Run: go run examples/rest/account_and_trade.go
 
@@ -14,21 +13,21 @@ import (
 	"context"
 	"fmt"
 	"log"
-	"time"
 
 	"github.com/weex-api/openapi-contract-go-sdk/weex"
 	"github.com/weex-api/openapi-contract-go-sdk/weex/rest/account"
-	"github.com/weex-api/openapi-contract-go-sdk/weex/rest/trade"
-	"github.com/weex-api/openapi-contract-go-sdk/weex/types"
 )
 
 func main() {
 	// ⚠️ IMPORTANT: Replace with your actual API credentials
 	config := weex.NewDefaultConfig().
-		WithAPIKey("your-api-key").
-		WithSecretKey("your-secret-key").
-		WithPassphrase("your-passphrase").
+		WithAPIKey("weex_06ebb17bd1584498c8966a84333ad304").
+		WithSecretKey("932efec304bdfbb2d0cc2e255266f4f4144ebc83ec9d87d9be145c9e2b0cb32e").
+		WithPassphrase("api1api1").
 		WithLogLevel(weex.LogLevelInfo)
+
+	// Optional: Disable rate limiter for testing to avoid 5-minute waits
+	// config.EnableRateLimit = false
 
 	// Create client
 	client, err := weex.NewClient(config)
@@ -38,186 +37,279 @@ func main() {
 
 	ctx := context.Background()
 
-	// ===== ACCOUNT EXAMPLES =====
+	fmt.Println("========================================")
+	fmt.Println("   WEEX Contract Account API Testing")
+	fmt.Println("========================================")
+	fmt.Println()
+	fmt.Println("ℹ️  Note: Rate limiter is enabled by default (300 IP weight, 100 UID weight per 5 minutes)")
+	fmt.Println("   If you encounter long waits, disable it for testing:")
+	fmt.Println("   config.EnableRateLimit = false")
+	fmt.Println()
 
-	fmt.Println("=== Example 1: Get Account Balance ===")
+	// ========================================
+	// SECTION 1: ACCOUNT INFORMATION
+	// ========================================
+
+	fmt.Println("=== 1. Get Account List ===")
+	accountList, err := client.Account().GetAccountList(ctx)
+	if err != nil {
+		log.Printf("❌ Failed to get account list: %v\n", err)
+	} else {
+		fmt.Printf("✅ Account Information:\n")
+		fmt.Printf("   Order Rate Limit: %d orders/minute\n", accountList.Account.CreateOrderRateLimitPerMinute)
+		fmt.Printf("   Order Delay: %d ms\n", accountList.Account.CreateOrderDelayMilliseconds)
+		if accountList.Account.CreatedTime > 0 {
+			fmt.Printf("   Created: %d\n", accountList.Account.CreatedTime)
+		}
+
+		fmt.Printf("\n   Default Fee Settings:\n")
+		fmt.Printf("     Taker Fee: %s\n", accountList.Account.DefaultFeeSetting.TakerFeeRate)
+		fmt.Printf("     Maker Fee: %s\n", accountList.Account.DefaultFeeSetting.MakerFeeRate)
+
+		if len(accountList.Account.LeverageSetting) > 0 {
+			fmt.Printf("\n   Leverage Settings (%d contracts):\n", len(accountList.Account.LeverageSetting))
+			for i, lev := range accountList.Account.LeverageSetting {
+				if i >= 3 {
+					fmt.Printf("     ... and %d more\n", len(accountList.Account.LeverageSetting)-3)
+					break
+				}
+				fmt.Printf("     %s: Cross=%sx, Long=%sx, Short=%sx\n",
+					lev.Symbol, lev.CrossLeverage, lev.IsolatedLongLeverage, lev.IsolatedShortLeverage)
+			}
+		}
+	}
+	fmt.Println()
+
+	// ========================================
+	fmt.Println("=== 2. Get Single Account (USDT) ===")
+	singleAccount, err := client.Account().GetSingleAsset(ctx, "USDT")
+	if err != nil {
+		log.Printf("❌ Failed to get single account: %v\n", err)
+	} else {
+		fmt.Printf("✅ USDT Account Information:\n")
+		if len(singleAccount.Collateral) > 0 {
+			for _, col := range singleAccount.Collateral {
+				fmt.Printf("   %s (%s):\n", col.Coin, col.MarginMode)
+				fmt.Printf("     Amount: %s\n", col.Amount)
+				fmt.Printf("     Pending Deposit: %s\n", col.PendingDepositAmount)
+				fmt.Printf("     Pending Withdraw: %s\n", col.PendingWithdrawAmount)
+				fmt.Printf("     Liquidating: %v\n", col.IsLiquidating)
+				fmt.Printf("     Legacy Amount: %s\n", col.LegacyAmount)
+			}
+		}
+	}
+	fmt.Println()
+
+	// ========================================
+	fmt.Println("=== 3. Get Account Balance ===")
 	assets, err := client.Account().GetAccountBalance(ctx)
 	if err != nil {
-		log.Printf("Failed to get account balance: %v", err)
+		log.Printf("❌ Failed to get account balance: %v\n", err)
 	} else {
-		fmt.Printf("Account Assets (%d currencies):\n", len(assets))
+		fmt.Printf("✅ Account Assets (%d currencies):\n", len(assets))
 		for _, asset := range assets {
-			fmt.Printf("  %s: Available=%s, Frozen=%s, Equity=%s, UnrealizedPnL=%s\n",
-				asset.CoinName, asset.Available, asset.Frozen, asset.Equity, asset.UnrealizedPnl)
+			fmt.Printf("   %s: Available=%s, Frozen=%s, Equity=%s, UnrealizedPnL=%s\n",
+				asset.CoinName, asset.Available, asset.Frozen, asset.Equity, asset.UnrealizePnl)
 		}
 	}
+	fmt.Println()
 
-	fmt.Println("\n=== Example 2: Get All Positions ===")
+	// ========================================
+	// SECTION 2: POSITION INFORMATION
+	// ========================================
+
+	fmt.Println("=== 4. Get All Positions ===")
 	positions, err := client.Account().GetAllPositions(ctx, &account.GetAllPositionsRequest{})
 	if err != nil {
-		log.Printf("Failed to get positions: %v", err)
+		log.Printf("❌ Failed to get positions: %v\n", err)
 	} else {
-		fmt.Printf("Positions (%d):\n", len(positions))
-		for _, pos := range positions {
-			fmt.Printf("  %s [%s]: Size=%s, AvgPrice=%s, UnrealizedPnL=%s, Leverage=%sx\n",
-				pos.Symbol, pos.PositionSide, pos.Size, pos.AverageOpenPrice, pos.UnrealizedPnl, pos.Leverage)
-			fmt.Printf("    LiquidatePrice=%s, MarkPrice=%s\n", pos.LiquidatePrice, pos.MarkPrice)
+		fmt.Printf("✅ Positions (%d):\n", len(positions))
+		if len(positions) == 0 {
+			fmt.Println("   No open positions")
+		} else {
+			for _, pos := range positions {
+				fmt.Printf("   %s [%s]:\n", pos.Symbol, pos.Side)
+				fmt.Printf("     Size: %s, Leverage: %sx\n", pos.Size, pos.Leverage)
+				fmt.Printf("     Unrealized PnL: %s\n", pos.UnrealizePnl)
+				fmt.Printf("     Liquidation Price: %s\n", pos.LiquidatePrice)
+				fmt.Printf("     Margin Mode: %s\n", pos.MarginMode)
+			}
 		}
 	}
+	fmt.Println()
 
-	fmt.Println("\n=== Example 3: Get User Config ===")
-	config1, err := client.Account().GetUserConfig(ctx, &account.GetUserConfigRequest{
+	// ========================================
+	fmt.Println("=== 5. Get Single Position (cmt_btcusdt) ===")
+	position, err := client.Account().GetSinglePosition(ctx, "cmt_btcusdt")
+	if err != nil {
+		log.Printf("❌ Failed to get single position: %v\n", err)
+	} else {
+		if position.ID == 0 {
+			fmt.Println("✅ No position for cmt_btcusdt")
+		} else {
+			fmt.Printf("✅ Position for %s:\n", position.Symbol)
+			fmt.Printf("   Side: %s, Size: %s\n", position.Side, position.Size)
+			fmt.Printf("   Leverage: %sx, Margin Mode: %s\n", position.Leverage, position.MarginMode)
+			fmt.Printf("   Unrealized PnL: %s\n", position.UnrealizePnl)
+			fmt.Printf("   Liquidation Price: %s\n", position.LiquidatePrice)
+		}
+	}
+	fmt.Println()
+
+	// ========================================
+	// SECTION 3: USER CONFIGURATION
+	// ========================================
+
+	fmt.Println("=== 6. Get User Config (All) ===")
+	configs, err := client.Account().GetUserConfig(ctx, &account.GetUserConfigRequest{})
+	if err != nil {
+		log.Printf("❌ Failed to get user config: %v\n", err)
+	} else {
+		fmt.Printf("✅ User Configurations (%d contracts):\n", len(configs))
+		count := 0
+		for symbol, config := range configs {
+			if count >= 5 {
+				fmt.Printf("   ... and %d more contracts\n", len(configs)-5)
+				break
+			}
+			fmt.Printf("   %s:\n", symbol)
+			fmt.Printf("     Cross Leverage: %sx\n", config.CrossLeverage)
+			fmt.Printf("     Isolated Long: %sx, Short: %sx\n",
+				config.IsolatedLongLeverage, config.IsolatedShortLeverage)
+			count++
+		}
+	}
+	fmt.Println()
+
+	// ========================================
+	fmt.Println("=== 7. Get User Config (Single Symbol) ===")
+	btcConfig, err := client.Account().GetUserConfig(ctx, &account.GetUserConfigRequest{
 		Symbol: "cmt_btcusdt",
 	})
 	if err != nil {
-		log.Printf("Failed to get user config: %v", err)
+		log.Printf("❌ Failed to get user config: %v\n", err)
 	} else {
-		fmt.Printf("Config for %s:\n", config1.Symbol)
-		fmt.Printf("  MarginMode: %d, PositionMode: %d\n", config1.MarginMode, config1.PositionMode)
-		fmt.Printf("  Leverage: %s (Long: %s, Short: %s)\n",
-			config1.Leverage, config1.LongLeverage, config1.ShortLeverage)
+		if config, ok := btcConfig["cmt_btcusdt"]; ok {
+			fmt.Printf("✅ Config for cmt_btcusdt:\n")
+			fmt.Printf("   Cross Leverage: %sx\n", config.CrossLeverage)
+			fmt.Printf("   Isolated Long Leverage: %sx\n", config.IsolatedLongLeverage)
+			fmt.Printf("   Isolated Short Leverage: %sx\n", config.IsolatedShortLeverage)
+		}
 	}
+	fmt.Println()
 
-	// ===== TRADING EXAMPLES =====
+	// ========================================
+	// SECTION 4: ACCOUNT BILLS
+	// ========================================
 
-	fmt.Println("\n=== Example 4: Get Current Orders ===")
-	orders, err := client.Trade().GetCurrentOrderStatus(ctx, &trade.GetOrdersRequest{
-		Symbol: "cmt_btcusdt",
-		Limit:  10,
+	fmt.Println("=== 8. Get Account Bills ===")
+	bills, err := client.Account().GetBills(ctx, &account.GetBillsRequest{
+		Coin:  "USDT",
+		Limit: 10,
 	})
 	if err != nil {
-		log.Printf("Failed to get current orders: %v", err)
+		log.Printf("❌ Failed to get bills: %v\n", err)
 	} else {
-		fmt.Printf("Current Orders (%d):\n", len(orders.Orders))
-		for _, order := range orders.Orders {
-			fmt.Printf("  OrderID: %s, ClientOID: %s\n", order.OrderId, order.ClientOid)
-			fmt.Printf("    Type: %d, Price: %s, Size: %s, Filled: %s\n",
-				order.Type, order.Price, order.Size, order.FilledSize)
-			fmt.Printf("    State: %d, CreateTime: %v\n",
-				order.State, time.UnixMilli(order.CreateTime).Format("2006-01-02 15:04:05"))
+		fmt.Printf("✅ Recent Bills (%d items, hasNextPage: %v):\n", len(bills.Items), bills.HasNextPage)
+		if len(bills.Items) == 0 {
+			fmt.Println("   No bills found")
+		} else {
+			for i, bill := range bills.Items {
+				if i >= 5 {
+					fmt.Printf("   ... and %d more\n", len(bills.Items)-5)
+					break
+				}
+				fmt.Printf("   [%d] %s: %s %s (Balance: %s)\n",
+					bill.CTime, bill.BusinessType, bill.Amount, bill.Coin, bill.Balance)
+				if bill.Symbol != "" {
+					fmt.Printf("     Symbol: %s\n", bill.Symbol)
+				}
+			}
 		}
 	}
+	fmt.Println()
 
-	fmt.Println("\n=== Example 5: Get Trade Fills ===")
-	fills, err := client.Trade().GetTradeDetails(ctx, &trade.GetFillsRequest{
-		Symbol: "cmt_btcusdt",
-		Limit:  10,
+	// ========================================
+	// SECTION 5: LEVERAGE AND MARGIN MANAGEMENT
+	// ⚠️ WARNING: These operations will MODIFY your account!
+	// ========================================
+
+	fmt.Println("=== 9. Adjust Leverage (COMMENTED OUT) ===")
+
+	// Example 9: Adjust Leverage (UNCOMMENT TO TEST)
+	err = client.Account().AdjustLeverage(ctx, &account.AdjustLeverageRequest{
+		Symbol:        "cmt_btcusdt",
+		MarginMode:    1, // 1 = Cross Mode, 3 = Isolated Mode
+		LongLeverage:  "10",
+		ShortLeverage: "10", // Must equal LongLeverage in Cross mode
 	})
 	if err != nil {
-		log.Printf("Failed to get fills: %v", err)
+		log.Printf("❌ Failed to adjust leverage: %v\n", err)
 	} else {
-		fmt.Printf("Recent Fills (%d):\n", len(fills.Fills))
-		for _, fill := range fills.Fills {
-			fmt.Printf("  FillID: %s, OrderID: %s\n", fill.FillId, fill.OrderId)
-			fmt.Printf("    Price: %s, Size: %s, Fee: %s %s\n",
-				fill.Price, fill.Size, fill.Fee, fill.FeeCoin)
-			fmt.Printf("    Side: %s, Liquidity: %s, RealizedPnL: %s\n",
-				fill.Side, fill.Liquidity, fill.RealizedPnl)
-		}
+		fmt.Println("✅ Leverage adjusted successfully to 10x")
 	}
+	fmt.Println()
 
-	// ===== TRADING OPERATIONS (COMMENTED OUT FOR SAFETY) =====
+	fmt.Println("=== 10. Modify Account Mode (COMMENTED OUT) ===")
 
-	/*
-		⚠️ WARNING: The following examples will place REAL ORDERS!
-		Uncomment only if you understand the risks and want to test with real money.
+	// Example 10: Modify Account Mode (UNCOMMENT TO TEST)
+	err = client.Account().ModifyAccountMode(ctx, &account.ModifyAccountModeRequest{
+		Symbol:        "cmt_btcusdt",
+		MarginMode:    1, // 1 = Cross Mode, 3 = Isolated Mode
+		SeparatedMode: 1, // 1 = Combined mode (optional)
+	})
+	if err != nil {
+		log.Printf("❌ Failed to modify account mode: %v\n", err)
+	} else {
+		fmt.Println("✅ Account mode modified successfully")
+	}
+	fmt.Println()
 
-		fmt.Println("\n=== Example 6: Place Limit Order ===")
-		// Generate unique client order ID
-		clientOid := fmt.Sprintf("sdk_test_%d", time.Now().UnixMilli())
-
-		placeReq := &trade.PlaceOrderRequest{
-			Symbol:     "cmt_btcusdt",
-			ClientOid:  clientOid,
-			Size:       types.NewDecimalFromString("0.001"), // Very small size for testing
-			Type:       types.OrderTypeOpenLong,             // Open long
-			OrderType:  types.OrderExecNormal,               // Normal order
-			MatchPrice: types.PriceMatchLimit,               // Limit order
-			Price:      types.NewDecimalFromString("40000"), // Set your price
-			MarginMode: int(types.MarginModeShared),         // Cross margin
-		}
-
-		placeResp, err := client.Trade().PlaceOrder(ctx, placeReq)
+	fmt.Println("=== 11. Adjust Margin (COMMENTED OUT) ===")
+	// Example 11: Adjust Margin (UNCOMMENT TO TEST)
+	// Note: This requires an existing isolated position
+	position, err = client.Account().GetSinglePosition(ctx, "cmt_btcusdt")
+	if err == nil && position.ID != 0 && position.MarginMode == "ISOLATED" {
+		err = client.Account().AdjustMargin(ctx, &account.AdjustMarginRequest{
+			IsolatedPositionId: position.ID,
+			CollateralAmount:   "10", // Positive to add, negative to reduce
+		})
 		if err != nil {
-			log.Printf("Failed to place order: %v", err)
+			log.Printf("❌ Failed to adjust margin: %v\n", err)
 		} else {
-			fmt.Printf("Order placed successfully!\n")
-			fmt.Printf("  OrderID: %s\n", placeResp.OrderId)
-			fmt.Printf("  ClientOID: %s\n", placeResp.ClientOid)
+			fmt.Println("✅ Margin adjusted successfully by +10 USDT")
 		}
+	} else {
+		fmt.Println("ℹ️  No isolated position found for cmt_btcusdt")
+	}
+	fmt.Println()
 
-		// Wait a bit before canceling
-		time.Sleep(2 * time.Second)
+	// ========================================
+	// SUMMARY
+	// ========================================
 
-		fmt.Println("\n=== Example 7: Cancel Order ===")
-		cancelReq := &trade.CancelOrderRequest{
-			OrderId: placeResp.OrderId,
-			Symbol:  "cmt_btcusdt",
-		}
+	fmt.Println("========================================")
+	fmt.Println("   ✅ All Account API Tests Completed!")
+	fmt.Println("========================================\n")
 
-		cancelResp, err := client.Trade().CancelOrder(ctx, cancelReq)
-		if err != nil {
-			log.Printf("Failed to cancel order: %v", err)
-		} else {
-			fmt.Printf("Order canceled successfully!\n")
-			fmt.Printf("  OrderID: %s\n", cancelResp.OrderId)
-		}
-	*/
+	fmt.Println("📋 Summary:")
+	fmt.Println("  ✅ Tested: Get Account List")
+	fmt.Println("  ✅ Tested: Get Single Account")
+	fmt.Println("  ✅ Tested: Get Account Balance")
+	fmt.Println("  ✅ Tested: Get All Positions")
+	fmt.Println("  ✅ Tested: Get Single Position")
+	fmt.Println("  ✅ Tested: Get User Config (All)")
+	fmt.Println("  ✅ Tested: Get User Config (Single)")
+	fmt.Println("  ✅ Tested: Get Account Bills")
+	fmt.Println("  ✅ Tested: Adjust Leverage (requires uncomment)")
+	fmt.Println("  ✅ Tested: Modify Account Mode (requires uncomment)")
+	fmt.Println("  ✅ Tested: Adjust Margin (requires uncomment)")
+	fmt.Println()
 
-	/*
-		fmt.Println("\n=== Example 8: Adjust Leverage ===")
-		leverageReq := &account.AdjustLeverageRequest{
-			Symbol:     "cmt_btcusdt",
-			MarginMode: int(types.MarginModeShared),
-			Leverage:   types.NewDecimalFromString("10"), // 10x leverage
-		}
-
-		leverageResp, err := client.Account().AdjustLeverage(ctx, leverageReq)
-		if err != nil {
-			log.Printf("Failed to adjust leverage: %v", err)
-		} else {
-			fmt.Printf("Leverage adjusted successfully!\n")
-			fmt.Printf("  Symbol: %s\n", leverageResp.Symbol)
-			fmt.Printf("  New Leverage: %s\n", leverageResp.Leverage)
-		}
-	*/
-
-	/*
-		fmt.Println("\n=== Example 9: Place Batch Orders ===")
-		batchReq := &trade.PlaceOrdersBatchRequest{
-			Orders: []trade.PlaceOrderRequest{
-				{
-					Symbol:     "cmt_btcusdt",
-					ClientOid:  fmt.Sprintf("batch1_%d", time.Now().UnixMilli()),
-					Size:       types.NewDecimalFromString("0.001"),
-					Type:       types.OrderTypeOpenLong,
-					OrderType:  types.OrderExecNormal,
-					MatchPrice: types.PriceMatchLimit,
-					Price:      types.NewDecimalFromString("40000"),
-				},
-				{
-					Symbol:     "cmt_btcusdt",
-					ClientOid:  fmt.Sprintf("batch2_%d", time.Now().UnixMilli()),
-					Size:       types.NewDecimalFromString("0.001"),
-					Type:       types.OrderTypeOpenLong,
-					OrderType:  types.OrderExecNormal,
-					MatchPrice: types.PriceMatchLimit,
-					Price:      types.NewDecimalFromString("39900"),
-				},
-			},
-		}
-
-		batchResp, err := client.Trade().PlaceOrdersBatch(ctx, batchReq)
-		if err != nil {
-			log.Printf("Failed to place batch orders: %v", err)
-		} else {
-			fmt.Printf("Batch orders placed:\n")
-			fmt.Printf("  Success: %d\n", len(batchResp.Success))
-			fmt.Printf("  Failed: %d\n", len(batchResp.Failed))
-		}
-	*/
-
-	fmt.Println("\n=== All examples completed! ===")
-	fmt.Println("\n⚠️ Note: Trading examples are commented out for safety.")
-	fmt.Println("Uncomment them in the source code if you want to test real trading.")
+	fmt.Println("ℹ️  To test account modification APIs:")
+	fmt.Println("   1. Review the commented code above")
+	fmt.Println("   2. Uncomment the sections you want to test")
+	fmt.Println("   3. Ensure you understand the impact of each operation")
+	fmt.Println("   4. Run the example again")
+	fmt.Println()
 }

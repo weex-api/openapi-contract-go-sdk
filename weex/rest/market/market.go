@@ -70,7 +70,7 @@ func (s *Service) GetAllTickers(ctx context.Context) ([]Ticker, error) {
 
 // GetDepth gets order book depth data
 // GET /market/depth
-// Weight(IP): 10, Weight(UID): 5
+// Weight(IP): 1, Weight(UID): 1
 //
 // Reference: /contract/Market_API/GetDepthData.md
 func (s *Service) GetDepth(ctx context.Context, req *GetDepthRequest) (*Depth, error) {
@@ -78,40 +78,41 @@ func (s *Service) GetDepth(ctx context.Context, req *GetDepthRequest) (*Depth, e
 	params.Set("symbol", req.Symbol)
 
 	if req.Limit > 0 {
+		// Validate limit: must be 15 or 200
+		if req.Limit != 15 && req.Limit != 200 {
+			return nil, fmt.Errorf("limit must be 15 or 200, got %d", req.Limit)
+		}
 		params.Set("limit", strconv.Itoa(req.Limit))
 	}
 
 	path := "/market/depth?" + params.Encode()
 
 	var depth Depth
-	err := s.client.Get(ctx, path, &depth, 10, 5)
+	err := s.client.Get(ctx, path, &depth, 1, 1)
 	return &depth, err
 }
 
 // GetKlines gets candlestick/kline data
-// GET /market/klines
-// Weight(IP): 10, Weight(UID): 5
+// GET /market/candles
+// Weight(IP): 1, Weight(UID): 1
 //
 // Reference: /contract/Market_API/GetKLineData.md
 func (s *Service) GetKlines(ctx context.Context, req *GetKlinesRequest) ([]Kline, error) {
 	params := url.Values{}
 	params.Set("symbol", req.Symbol)
-	params.Set("interval", string(req.Interval))
+	params.Set("granularity", string(req.Interval))
 
-	if req.StartTime > 0 {
-		params.Set("startTime", strconv.FormatInt(req.StartTime, 10))
-	}
-	if req.EndTime > 0 {
-		params.Set("endTime", strconv.FormatInt(req.EndTime, 10))
-	}
 	if req.Limit > 0 {
 		params.Set("limit", strconv.Itoa(req.Limit))
 	}
+	if req.PriceType != "" {
+		params.Set("priceType", req.PriceType)
+	}
 
-	path := "/market/klines?" + params.Encode()
+	path := "/market/candles?" + params.Encode()
 
 	var klines []Kline
-	err := s.client.Get(ctx, path, &klines, 10, 5)
+	err := s.client.Get(ctx, path, &klines, 1, 1)
 	return klines, err
 }
 
@@ -187,18 +188,29 @@ func (s *Service) GetIndexPrice(ctx context.Context, symbol string) (*IndexPrice
 }
 
 // GetFundingRate gets the current funding rate
-// GET /market/fundingRate
-// Weight(IP): 5, Weight(UID): 2
+// GET /market/currentFundRate
+// Weight(IP): 1, Weight(UID): 1
 //
 // Reference: /contract/Market_API/GetCurrentFundRate.md
 func (s *Service) GetFundingRate(ctx context.Context, symbol string) (*FundingRate, error) {
 	params := url.Values{}
-	params.Set("symbol", symbol)
-	path := "/market/fundingRate?" + params.Encode()
+	if symbol != "" {
+		params.Set("symbol", symbol)
+	}
+	path := "/market/currentFundRate"
+	if len(params) > 0 {
+		path = path + "?" + params.Encode()
+	}
 
-	var fundingRate FundingRate
-	err := s.client.Get(ctx, path, &fundingRate, 5, 2)
-	return &fundingRate, err
+	var fundingRates []FundingRate
+	err := s.client.Get(ctx, path, &fundingRates, 1, 1)
+	if err != nil {
+		return nil, err
+	}
+	if len(fundingRates) == 0 {
+		return nil, fmt.Errorf("no funding rate data returned")
+	}
+	return &fundingRates[0], nil
 }
 
 // GetFundingHistory gets historical funding rates
@@ -243,18 +255,22 @@ func (s *Service) GetSettlementTime(ctx context.Context, symbol string) (*Settle
 }
 
 // GetOpenInterest gets the platform open interest
-// GET /market/openInterest
-// Weight(IP): 5, Weight(UID): 2
+// GET /market/open_interest
+// Weight(IP): 2, Weight(UID): 1
 //
 // Reference: /contract/Market_API/GetTotalPlatformOpenInterest.md
+// Note: API returns object, not array (despite documentation showing array)
 func (s *Service) GetOpenInterest(ctx context.Context, symbol string) (*OpenInterest, error) {
 	params := url.Values{}
 	params.Set("symbol", symbol)
-	path := "/market/openInterest?" + params.Encode()
+	path := "/market/open_interest?" + params.Encode()
 
 	var openInterest OpenInterest
-	err := s.client.Get(ctx, path, &openInterest, 5, 2)
-	return &openInterest, err
+	err := s.client.Get(ctx, path, &openInterest, 2, 1)
+	if err != nil {
+		return nil, err
+	}
+	return &openInterest, nil
 }
 
 // Helper function to build query string

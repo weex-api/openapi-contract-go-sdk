@@ -6,45 +6,41 @@ import (
 
 // ContractInfo represents contract information
 type ContractInfo struct {
-	Symbol                string        `json:"symbol"`                // Contract symbol (e.g., "cmt_btcusdt")
-	BaseCoin              string        `json:"baseCoin"`              // Base coin (e.g., "BTC")
-	QuoteCoin             string        `json:"quoteCoin"`             // Quote coin (e.g., "USDT")
-	SettleCoin            string        `json:"settleCoin"`            // Settlement coin
-	ContractSize          types.Decimal `json:"contractSize"`          // Contract size
-	DeliveryDate          int64         `json:"deliveryDate"`          // Delivery date (Unix timestamp)
-	MakerFee              types.Decimal `json:"makerFee"`              // Maker fee rate
-	TakerFee              types.Decimal `json:"takerFee"`              // Taker fee rate
-	PriceTick             types.Decimal `json:"priceTick"`             // Minimum price increment
-	LotSize               types.Decimal `json:"lotSize"`               // Minimum order size
-	ContractType          string        `json:"contractType"`          // Contract type (e.g., "PERPETUAL")
-	Status                int           `json:"status"`                // Contract status
-	MaxLeverage           types.Decimal `json:"maxLeverage"`           // Maximum leverage
-	MinLeverage           types.Decimal `json:"minLeverage"`           // Minimum leverage
-	MaintenanceMarginRate types.Decimal `json:"maintenanceMarginRate"` // Maintenance margin rate
-	InitialMarginRate     types.Decimal `json:"initialMarginRate"`     // Initial margin rate
+	Symbol              string   `json:"symbol"`              // Contract symbol (e.g., "cmt_btcusdt")
+	UnderlyingIndex     string   `json:"underlying_index"`    // Underlying index (e.g., "BTC")
+	QuoteCurrency       string   `json:"quote_currency"`      // Quote currency (e.g., "USDT")
+	Coin                string   `json:"coin"`                // Margin token
+	ContractVal         string   `json:"contract_val"`        // Contract value
+	Delivery            []string `json:"delivery"`            // Delivery times
+	SizeIncrement       string   `json:"size_increment"`      // Size increment
+	TickSize            string   `json:"tick_size"`           // Tick size
+	ForwardContractFlag bool     `json:"forwardContractFlag"` // Whether it is USDT-M futures
+	PriceEndStep        float64  `json:"priceEndStep"`        // Price end step
+	MinLeverage         int      `json:"minLeverage"`         // Minimum leverage
+	MaxLeverage         int      `json:"maxLeverage"`         // Maximum leverage
+	BuyLimitPriceRatio  string   `json:"buyLimitPriceRatio"`  // Buy limit price ratio
+	SellLimitPriceRatio string   `json:"sellLimitPriceRatio"` // Sell limit price ratio
+	MakerFeeRate        string   `json:"makerFeeRate"`        // Maker fee rate
+	TakerFeeRate        string   `json:"takerFeeRate"`        // Taker fee rate
+	MinOrderSize        string   `json:"minOrderSize"`        // Minimum order size
+	MaxOrderSize        string   `json:"maxOrderSize"`        // Maximum order size
+	MaxPositionSize     string   `json:"maxPositionSize"`     // Maximum position size
 }
 
 // Ticker represents ticker information
 type Ticker struct {
-	Symbol             string        `json:"symbol"`             // Contract symbol
-	PriceChange        types.Decimal `json:"priceChange"`        // Price change
-	PriceChangePercent types.Decimal `json:"priceChangePercent"` // Price change percentage
-	LastPrice          types.Decimal `json:"lastPrice"`          // Last traded price
-	MarkPrice          types.Decimal `json:"markPrice"`          // Mark price
-	IndexPrice         types.Decimal `json:"indexPrice"`         // Index price
-	OpenPrice          types.Decimal `json:"openPrice"`          // Open price (24h)
-	HighPrice          types.Decimal `json:"highPrice"`          // High price (24h)
-	LowPrice           types.Decimal `json:"lowPrice"`           // Low price (24h)
-	Volume             types.Decimal `json:"volume"`             // Trading volume (24h)
-	QuoteVolume        types.Decimal `json:"quoteVolume"`        // Quote volume (24h)
-	OpenTime           int64         `json:"openTime"`           // Open time
-	CloseTime          int64         `json:"closeTime"`          // Close time
-	FirstTradeId       int64         `json:"firstTradeId"`       // First trade ID
-	TradeCount         int64         `json:"tradeCount"`         // Number of trades
-	BidPrice           types.Decimal `json:"bidPrice"`           // Best bid price
-	BidQty             types.Decimal `json:"bidQty"`             // Best bid quantity
-	AskPrice           types.Decimal `json:"askPrice"`           // Best ask price
-	AskQty             types.Decimal `json:"askQty"`             // Best ask quantity
+	Symbol             string `json:"symbol"`             // Contract symbol
+	Last               string `json:"last"`               // Last price
+	BestAsk            string `json:"best_ask"`           // Best ask price
+	BestBid            string `json:"best_bid"`           // Best bid price
+	High24h            string `json:"high_24h"`           // 24h high price
+	Low24h             string `json:"low_24h"`            // 24h low price
+	Volume24h          string `json:"volume_24h"`         // 24h volume
+	Timestamp          string `json:"timestamp"`          // Timestamp
+	PriceChangePercent string `json:"priceChangePercent"` // Price change percent
+	BaseVolume         string `json:"base_volume"`        // Base volume
+	MarkPrice          string `json:"markPrice"`          // Mark price
+	IndexPrice         string `json:"indexPrice"`         // Index price
 }
 
 // DepthEntry represents a single depth level
@@ -55,56 +51,48 @@ type DepthEntry struct {
 
 // Depth represents order book depth data
 type Depth struct {
-	Symbol string       `json:"symbol"` // Contract symbol
-	Bids   []DepthEntry `json:"bids"`   // Buy orders (price descending)
-	Asks   []DepthEntry `json:"asks"`   // Sell orders (price ascending)
-	Time   int64        `json:"time"`   // Timestamp
+	Asks      [][]string `json:"asks"`      // Sell orders (price ascending) - array of [price, quantity]
+	Bids      [][]string `json:"bids"`      // Buy orders (price descending) - array of [price, quantity]
+	Timestamp string     `json:"timestamp"` // Timestamp
 }
 
 // Kline represents candlestick data
-type Kline struct {
-	OpenTime            int64         `json:"openTime"`            // Open time
-	Open                types.Decimal `json:"open"`                // Open price
-	High                types.Decimal `json:"high"`                // High price
-	Low                 types.Decimal `json:"low"`                 // Low price
-	Close               types.Decimal `json:"close"`               // Close price
-	Volume              types.Decimal `json:"volume"`              // Trading volume
-	CloseTime           int64         `json:"closeTime"`           // Close time
-	QuoteVolume         types.Decimal `json:"quoteVolume"`         // Quote asset volume
-	TradeCount          int64         `json:"tradeCount"`          // Number of trades
-	TakerBuyBaseVolume  types.Decimal `json:"takerBuyBaseVolume"`  // Taker buy base volume
-	TakerBuyQuoteVolume types.Decimal `json:"takerBuyQuoteVolume"` // Taker buy quote volume
-}
+// API returns array: [timestamp, open, high, low, close, base_volume, quote_volume]
+type Kline []string
 
 // Trade represents a trade record
 type Trade struct {
-	ID           int64         `json:"id"`           // Trade ID
-	Price        types.Decimal `json:"price"`        // Trade price
-	Qty          types.Decimal `json:"qty"`          // Trade quantity
-	QuoteQty     types.Decimal `json:"quoteQty"`     // Quote quantity
-	Time         int64         `json:"time"`         // Trade time
-	IsBuyerMaker bool          `json:"isBuyerMaker"` // Whether buyer is maker
+	TicketID     string `json:"ticketId"`     // Trade ID
+	Time         int64  `json:"time"`         // Trade time
+	Price        string `json:"price"`        // Price
+	Size         string `json:"size"`         // Size
+	Value        string `json:"value"`        // Value
+	Symbol       string `json:"symbol"`       // Symbol
+	IsBestMatch  bool   `json:"isBestMatch"`  // Is best match
+	IsBuyerMaker bool   `json:"isBuyerMaker"` // Is buyer maker
+	ContractVal  string `json:"contractVal"`  // Contract value
 }
 
 // ServerTime represents server time response
 type ServerTime struct {
-	ServerTime int64 `json:"serverTime"` // Server timestamp in milliseconds
+	Epoch     string `json:"epoch"`     // Unix timestamp in seconds (decimal)
+	ISO       string `json:"iso"`       // ISO 8601 format
+	Timestamp int64  `json:"timestamp"` // Unix timestamp in milliseconds
 }
 
 // IndexPrice represents index price information
 type IndexPrice struct {
-	Symbol     string        `json:"symbol"`     // Contract symbol
-	IndexPrice types.Decimal `json:"indexPrice"` // Index price
-	Time       int64         `json:"time"`       // Timestamp
+	Symbol    string `json:"symbol"`    // Contract symbol
+	Index     string `json:"index"`     // Index price
+	Timestamp string `json:"timestamp"` // Timestamp
 }
 
 // FundingRate represents funding rate information
 type FundingRate struct {
-	Symbol          string        `json:"symbol"`          // Contract symbol
-	FundingRate     types.Decimal `json:"fundingRate"`     // Current funding rate
-	FundingTime     int64         `json:"fundingTime"`     // Funding time
-	NextFundingRate types.Decimal `json:"nextFundingRate"` // Next funding rate (predicted)
-	NextFundingTime int64         `json:"nextFundingTime"` // Next funding time
+	Symbol       string `json:"symbol"`       // Contract symbol
+	FundingRate  string `json:"fundingRate"`  // Current funding rate
+	CollectCycle int64  `json:"collectCycle"` // Funding rate collection cycle (minutes)
+	Timestamp    int64  `json:"timestamp"`    // Funding fee settlement time
 }
 
 // FundingRateHistory represents historical funding rate record
@@ -122,10 +110,10 @@ type SettlementTime struct {
 
 // OpenInterest represents open interest information
 type OpenInterest struct {
-	Symbol            string        `json:"symbol"`            // Contract symbol
-	OpenInterest      types.Decimal `json:"openInterest"`      // Total open interest
-	OpenInterestValue types.Decimal `json:"openInterestValue"` // Open interest value
-	Time              int64         `json:"time"`              // Timestamp
+	Symbol       string `json:"symbol"`        // Contract symbol
+	BaseVolume   string `json:"base_volume"`   // Base volume
+	TargetVolume string `json:"target_volume"` // Target volume
+	Timestamp    string `json:"timestamp"`     // Timestamp
 }
 
 // Request types
@@ -138,10 +126,9 @@ type GetContractsRequest struct {
 // GetKlinesRequest is the request for GetKlines
 type GetKlinesRequest struct {
 	Symbol    string              // Required: contract symbol
-	Interval  types.KlineInterval // Required: kline interval
-	StartTime int64               // Optional: start time (Unix timestamp in ms)
-	EndTime   int64               // Optional: end time (Unix timestamp in ms)
-	Limit     int                 // Optional: number of results (default 500, max 1000)
+	Interval  types.KlineInterval // Required: kline interval (granularity)
+	Limit     int                 // Optional: number of results (default 100, max 1000)
+	PriceType string              // Optional: LAST, MARK, INDEX (default: LAST)
 }
 
 // GetHistoryKlinesRequest is the request for GetHistoryKlines

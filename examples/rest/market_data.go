@@ -38,7 +38,8 @@ func main() {
 	if err != nil {
 		log.Printf("Failed to get server time: %v", err)
 	} else {
-		fmt.Printf("Server Time: %v (%d)\n", time.UnixMilli(serverTime.ServerTime), serverTime.ServerTime)
+		fmt.Printf("Server Time: %v (%d)\n", time.UnixMilli(serverTime.Timestamp), serverTime.Timestamp)
+		fmt.Printf("ISO Time: %s\n", serverTime.ISO)
 	}
 
 	// Example 2: Get contract information
@@ -51,12 +52,12 @@ func main() {
 	} else {
 		for _, contract := range contracts {
 			fmt.Printf("Contract: %s\n", contract.Symbol)
-			fmt.Printf("  Base Coin: %s\n", contract.BaseCoin)
-			fmt.Printf("  Quote Coin: %s\n", contract.QuoteCoin)
-			fmt.Printf("  Contract Type: %s\n", contract.ContractType)
-			fmt.Printf("  Max Leverage: %s\n", contract.MaxLeverage)
-			fmt.Printf("  Maker Fee: %s\n", contract.MakerFee)
-			fmt.Printf("  Taker Fee: %s\n", contract.TakerFee)
+			fmt.Printf("  Underlying Index: %s\n", contract.UnderlyingIndex)
+			fmt.Printf("  Quote Currency: %s\n", contract.QuoteCurrency)
+			fmt.Printf("  Coin: %s\n", contract.Coin)
+			fmt.Printf("  Max Leverage: %d\n", contract.MaxLeverage)
+			fmt.Printf("  Maker Fee: %s\n", contract.MakerFeeRate)
+			fmt.Printf("  Taker Fee: %s\n", contract.TakerFeeRate)
 		}
 	}
 
@@ -67,15 +68,15 @@ func main() {
 		log.Printf("Failed to get ticker: %v", err)
 	} else {
 		fmt.Printf("Ticker for %s:\n", ticker.Symbol)
-		fmt.Printf("  Last Price: %s\n", ticker.LastPrice)
+		fmt.Printf("  Last Price: %s\n", ticker.Last)
 		fmt.Printf("  Mark Price: %s\n", ticker.MarkPrice)
 		fmt.Printf("  Index Price: %s\n", ticker.IndexPrice)
-		fmt.Printf("  24h Change: %s (%s%%)\n", ticker.PriceChange, ticker.PriceChangePercent)
-		fmt.Printf("  24h High: %s\n", ticker.HighPrice)
-		fmt.Printf("  24h Low: %s\n", ticker.LowPrice)
-		fmt.Printf("  24h Volume: %s\n", ticker.Volume)
-		fmt.Printf("  Best Bid: %s @ %s\n", ticker.BidQty, ticker.BidPrice)
-		fmt.Printf("  Best Ask: %s @ %s\n", ticker.AskQty, ticker.AskPrice)
+		fmt.Printf("  24h Change: %s%%\n", ticker.PriceChangePercent)
+		fmt.Printf("  24h High: %s\n", ticker.High24h)
+		fmt.Printf("  24h Low: %s\n", ticker.Low24h)
+		fmt.Printf("  24h Volume: %s\n", ticker.Volume24h)
+		fmt.Printf("  Best Bid: %s\n", ticker.BestBid)
+		fmt.Printf("  Best Ask: %s\n", ticker.BestAsk)
 	}
 
 	// Example 4: Get all tickers
@@ -90,7 +91,7 @@ func main() {
 			if i >= 5 {
 				break
 			}
-			fmt.Printf("  %s: %s (Change: %s%%)\n", t.Symbol, t.LastPrice, t.PriceChangePercent)
+			fmt.Printf("  %s: %s (Change: %s%%)\n", t.Symbol, t.Last, t.PriceChangePercent)
 		}
 	}
 
@@ -98,25 +99,29 @@ func main() {
 	fmt.Println("\n=== Example 5: Get Order Book Depth ===")
 	depth, err := client.Market().GetDepth(ctx, &market.GetDepthRequest{
 		Symbol: "cmt_btcusdt",
-		Limit:  5, // Get top 5 levels
+		Limit:  15, // Must be 15 or 200
 	})
 	if err != nil {
 		log.Printf("Failed to get depth: %v", err)
 	} else {
-		fmt.Printf("Order Book for %s:\n", depth.Symbol)
+		fmt.Printf("Order Book for cmt_btcusdt:\n")
 		fmt.Println("  Bids (Buy Orders):")
 		for i, bid := range depth.Bids {
 			if i >= 5 {
 				break
 			}
-			fmt.Printf("    Price: %s, Quantity: %s\n", bid.Price, bid.Quantity)
+			if len(bid) >= 2 {
+				fmt.Printf("    Price: %s, Quantity: %s\n", bid[0], bid[1])
+			}
 		}
 		fmt.Println("  Asks (Sell Orders):")
 		for i, ask := range depth.Asks {
 			if i >= 5 {
 				break
 			}
-			fmt.Printf("    Price: %s, Quantity: %s\n", ask.Price, ask.Quantity)
+			if len(ask) >= 2 {
+				fmt.Printf("    Price: %s, Quantity: %s\n", ask[0], ask[1])
+			}
 		}
 	}
 
@@ -139,7 +144,7 @@ func main() {
 				side = "BUY"
 			}
 			fmt.Printf("  [%s] Price: %s, Qty: %s, Time: %v\n",
-				side, trade.Price, trade.Qty, time.UnixMilli(trade.Time).Format("15:04:05"))
+				side, trade.Price, trade.Size, time.UnixMilli(trade.Time).Format("15:04:05"))
 		}
 	}
 
@@ -155,9 +160,10 @@ func main() {
 	} else {
 		fmt.Printf("Recent 1h klines for cmt_btcusdt:\n")
 		for _, kline := range klines {
-			fmt.Printf("  Time: %v, O: %s, H: %s, L: %s, C: %s, V: %s\n",
-				time.UnixMilli(kline.OpenTime).Format("2006-01-02 15:04"),
-				kline.Open, kline.High, kline.Low, kline.Close, kline.Volume)
+			if len(kline) >= 7 {
+				fmt.Printf("  Time: %s, O: %s, H: %s, L: %s, C: %s, V: %s\n",
+					kline[0], kline[1], kline[2], kline[3], kline[4], kline[5])
+			}
 		}
 	}
 
@@ -169,9 +175,8 @@ func main() {
 	} else {
 		fmt.Printf("Funding Rate for %s:\n", fundingRate.Symbol)
 		fmt.Printf("  Current Rate: %s\n", fundingRate.FundingRate)
-		fmt.Printf("  Funding Time: %v\n", time.UnixMilli(fundingRate.FundingTime).Format("2006-01-02 15:04:05"))
-		fmt.Printf("  Next Rate: %s\n", fundingRate.NextFundingRate)
-		fmt.Printf("  Next Time: %v\n", time.UnixMilli(fundingRate.NextFundingTime).Format("2006-01-02 15:04:05"))
+		fmt.Printf("  Collect Cycle: %d minutes\n", fundingRate.CollectCycle)
+		fmt.Printf("  Timestamp: %v\n", time.UnixMilli(fundingRate.Timestamp).Format("2006-01-02 15:04:05"))
 	}
 
 	// Example 9: Get index price
@@ -180,7 +185,7 @@ func main() {
 	if err != nil {
 		log.Printf("Failed to get index price: %v", err)
 	} else {
-		fmt.Printf("Index Price for %s: %s\n", indexPrice.Symbol, indexPrice.IndexPrice)
+		fmt.Printf("Index Price for %s: %s\n", indexPrice.Symbol, indexPrice.Index)
 	}
 
 	// Example 10: Get open interest
@@ -190,8 +195,8 @@ func main() {
 		log.Printf("Failed to get open interest: %v", err)
 	} else {
 		fmt.Printf("Open Interest for %s:\n", openInterest.Symbol)
-		fmt.Printf("  Open Interest: %s\n", openInterest.OpenInterest)
-		fmt.Printf("  Open Interest Value: %s\n", openInterest.OpenInterestValue)
+		fmt.Printf("  Base Volume: %s\n", openInterest.BaseVolume)
+		fmt.Printf("  Target Volume: %s\n", openInterest.TargetVolume)
 	}
 
 	fmt.Println("\n=== All examples completed! ===")

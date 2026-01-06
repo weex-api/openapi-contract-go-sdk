@@ -5,7 +5,6 @@ import (
 	"context"
 	"fmt"
 	"net/url"
-	"strconv"
 
 	"github.com/weex-api/openapi-contract-go-sdk/weex/rest"
 )
@@ -21,16 +20,16 @@ func NewService(client *rest.Client) *Service {
 }
 
 // GetAccountList gets the list of all contract accounts
-// GET /account/accounts
-// Weight(IP): 10, Weight(UID): 5
+// GET /account/getAccounts
+// Weight(IP): 5, Weight(UID): 5
 //
 // Reference: /contract/Account_API/AllContractAccountsInfo.md
-func (s *Service) GetAccountList(ctx context.Context) ([]AccountInfo, error) {
-	path := "/account/accounts"
+func (s *Service) GetAccountList(ctx context.Context) (*AccountResponse, error) {
+	path := "/account/getAccounts"
 
-	var accounts []AccountInfo
-	err := s.client.Get(ctx, path, &accounts, 10, 5)
-	return accounts, err
+	var response AccountResponse
+	err := s.client.Get(ctx, path, &response, 5, 5)
+	return &response, err
 }
 
 // GetAccountBalance gets account asset information
@@ -46,154 +45,123 @@ func (s *Service) GetAccountBalance(ctx context.Context) ([]AssetBalance, error)
 	return assets, err
 }
 
-// GetSingleAsset gets single asset information
-// GET /account/asset
-// Weight(IP): 5, Weight(UID): 2
+// GetSingleAsset gets single asset information (single account info)
+// GET /account/getAccount
+// Weight(IP): 1, Weight(UID): 1
 //
 // Reference: /contract/Account_API/GetUserSingleAssetInfo.md
-func (s *Service) GetSingleAsset(ctx context.Context, req *GetSingleAssetRequest) (*SingleAssetInfo, error) {
+// Note: Returns the same structure as GetAccountList
+func (s *Service) GetSingleAsset(ctx context.Context, coin string) (*AccountResponse, error) {
 	params := url.Values{}
-	params.Set("coinId", strconv.Itoa(req.CoinId))
-	path := "/account/asset?" + params.Encode()
+	params.Set("coin", coin)
+	path := "/account/getAccount?" + params.Encode()
 
-	var asset SingleAssetInfo
-	err := s.client.Get(ctx, path, &asset, 5, 2)
-	return &asset, err
+	var response AccountResponse
+	err := s.client.Get(ctx, path, &response, 1, 1)
+	return &response, err
 }
 
 // GetAllPositions gets all positions
-// GET /account/positions
-// Weight(IP): 20, Weight(UID): 10
+// GET /account/position/allPosition
+// Weight(IP): 10, Weight(UID): 15
 //
 // Reference: /contract/Account_API/GetAllContractPositions.md
 func (s *Service) GetAllPositions(ctx context.Context, req *GetAllPositionsRequest) ([]Position, error) {
-	params := url.Values{}
-
-	if req != nil {
-		if req.Symbol != "" {
-			params.Set("symbol", req.Symbol)
-		}
-		if req.MarginMode > 0 {
-			params.Set("marginMode", strconv.Itoa(req.MarginMode))
-		}
-		if req.PositionSide != "" {
-			params.Set("positionSide", req.PositionSide)
-		}
-	}
-
-	path := "/account/positions"
-	if len(params) > 0 {
-		path = path + "?" + params.Encode()
-	}
+	path := "/account/position/allPosition"
 
 	var positions []Position
-	err := s.client.Get(ctx, path, &positions, 20, 10)
+	err := s.client.Get(ctx, path, &positions, 10, 15)
 	return positions, err
 }
 
 // GetSinglePosition gets a single position
-// GET /account/position
-// Weight(IP): 5, Weight(UID): 2
+// GET /account/position/singlePosition
+// Weight(IP): 2, Weight(UID): 3
 //
 // Reference: /contract/Account_API/GetSingleContractPosition.md
-func (s *Service) GetSinglePosition(ctx context.Context, req *GetSinglePositionRequest) (*Position, error) {
+// Note: API may return empty array [] when no position exists
+func (s *Service) GetSinglePosition(ctx context.Context, symbol string) (*Position, error) {
 	params := url.Values{}
-	params.Set("symbol", req.Symbol)
-	params.Set("marginMode", strconv.Itoa(req.MarginMode))
-	params.Set("positionSide", req.PositionSide)
-	path := "/account/position?" + params.Encode()
+	params.Set("symbol", symbol)
+	path := "/account/position/singlePosition?" + params.Encode()
 
+	// Try to unmarshal as Position first
 	var position Position
-	err := s.client.Get(ctx, path, &position, 5, 2)
-	return &position, err
+	err := s.client.Get(ctx, path, &position, 2, 3)
+	if err != nil {
+		// If it fails, might be an empty array, return empty position
+		return &Position{}, nil
+	}
+	return &position, nil
 }
 
 // GetBills gets account bills/transaction history
-// GET /account/bills
-// Weight(IP): 20, Weight(UID): 10
+// POST /account/bills
+// Weight(IP): 2, Weight(UID): 5
 //
 // Reference: /contract/Account_API/GetContractBills.md
 func (s *Service) GetBills(ctx context.Context, req *GetBillsRequest) (*BillsResponse, error) {
-	params := url.Values{}
-
-	if req != nil {
-		if req.CoinId > 0 {
-			params.Set("coinId", strconv.Itoa(req.CoinId))
-		}
-		if req.Symbol != "" {
-			params.Set("symbol", req.Symbol)
-		}
-		if req.Type > 0 {
-			params.Set("type", strconv.Itoa(req.Type))
-		}
-		if req.StartTime > 0 {
-			params.Set("startTime", strconv.FormatInt(req.StartTime, 10))
-		}
-		if req.EndTime > 0 {
-			params.Set("endTime", strconv.FormatInt(req.EndTime, 10))
-		}
-		if req.Limit > 0 {
-			params.Set("limit", strconv.Itoa(req.Limit))
-		}
-		if req.Offset > 0 {
-			params.Set("offset", strconv.Itoa(req.Offset))
-		}
-	}
-
 	path := "/account/bills"
-	if len(params) > 0 {
-		path = path + "?" + params.Encode()
-	}
 
 	var response BillsResponse
-	err := s.client.Get(ctx, path, &response, 20, 10)
+	err := s.client.Post(ctx, path, req, &response, 2, 5)
 	return &response, err
 }
 
 // GetUserConfig gets user configuration for a contract
-// GET /account/config
-// Weight(IP): 5, Weight(UID): 2
+// GET /account/settings
+// Weight(IP): 1, Weight(UID): 1
 //
 // Reference: /contract/Account_API/GetSingleContractUserConfig.md
-func (s *Service) GetUserConfig(ctx context.Context, req *GetUserConfigRequest) (*UserConfig, error) {
+// Returns a map of symbol to UserConfig
+func (s *Service) GetUserConfig(ctx context.Context, req *GetUserConfigRequest) (map[string]*UserConfigData, error) {
 	params := url.Values{}
-	params.Set("symbol", req.Symbol)
-	path := "/account/config?" + params.Encode()
+	if req != nil && req.Symbol != "" {
+		params.Set("symbol", req.Symbol)
+	}
 
-	var config UserConfig
-	err := s.client.Get(ctx, path, &config, 5, 2)
-	return &config, err
+	path := "/account/settings"
+	if len(params) > 0 {
+		path = path + "?" + params.Encode()
+	}
+
+	var config map[string]*UserConfigData
+	err := s.client.Get(ctx, path, &config, 1, 1)
+	return config, err
 }
 
 // AdjustLeverage adjusts leverage for a contract
 // POST /account/leverage
-// Weight(IP): 10, Weight(UID): 5
+// Weight(IP): 10, Weight(UID): 20
 //
 // Reference: /contract/Account_API/AdjustLeverage.md
-func (s *Service) AdjustLeverage(ctx context.Context, req *AdjustLeverageRequest) (*AdjustLeverageResponse, error) {
+func (s *Service) AdjustLeverage(ctx context.Context, req *AdjustLeverageRequest) error {
 	path := "/account/leverage"
 
-	var response AdjustLeverageResponse
-	err := s.client.Post(ctx, path, req, &response, 10, 5)
-	return &response, err
+	// API returns standard response (code, msg, requestTime), not data
+	var response rest.APIResponse
+	err := s.client.PostRaw(ctx, path, req, &response, 10, 20)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 // AdjustMargin adjusts margin for an isolated position
-// POST /account/margin
-// Weight(IP): 10, Weight(UID): 5
+// POST /account/adjustMargin
+// Weight(IP): 15, Weight(UID): 30
 //
 // Reference: /contract/Account_API/AdjustMargin.md
-func (s *Service) AdjustMargin(ctx context.Context, req *AdjustMarginRequest) (*AdjustMarginResponse, error) {
-	path := "/account/margin"
+func (s *Service) AdjustMargin(ctx context.Context, req *AdjustMarginRequest) error {
+	path := "/account/adjustMargin"
 
-	// Validate: margin mode must be ISOLATED (3)
-	if req.MarginMode != 3 {
-		return nil, fmt.Errorf("margin mode must be ISOLATED (3) for margin adjustment")
+	// API returns standard response (code, msg, requestTime), not data
+	var response rest.APIResponse
+	err := s.client.PostRaw(ctx, path, req, &response, 15, 30)
+	if err != nil {
+		return err
 	}
-
-	var response AdjustMarginResponse
-	err := s.client.Post(ctx, path, req, &response, 10, 5)
-	return &response, err
+	return nil
 }
 
 // AutoAddMargin enables/disables auto add margin for an isolated position
@@ -215,16 +183,20 @@ func (s *Service) AutoAddMargin(ctx context.Context, req *AutoAddMarginRequest) 
 }
 
 // ModifyAccountMode modifies account mode (margin mode and position mode)
-// POST /account/mode
-// Weight(IP): 10, Weight(UID): 5
+// POST /account/position/changeHoldModel
+// Weight(IP): 20, Weight(UID): 50
 //
 // Reference: /contract/Account_API/ModifyUserAccountMode.md
-func (s *Service) ModifyAccountMode(ctx context.Context, req *ModifyAccountModeRequest) (*ModifyAccountModeResponse, error) {
-	path := "/account/mode"
+func (s *Service) ModifyAccountMode(ctx context.Context, req *ModifyAccountModeRequest) error {
+	path := "/account/position/changeHoldModel"
 
-	var response ModifyAccountModeResponse
-	err := s.client.Post(ctx, path, req, &response, 10, 5)
-	return &response, err
+	// API returns standard response (code, msg, requestTime), not data
+	var response rest.APIResponse
+	err := s.client.PostRaw(ctx, path, req, &response, 20, 50)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 // Validation helpers
